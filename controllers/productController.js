@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const memoryStorage = multer.memoryStorage();
 
 const multerFilter = (req, file, cb) => {
-  if (file.mimetype.split('.')[0] === 'image') {
+  if (file.mimetype.startsWith('image')) {
     cb(null, true);
   } else {
     cb(new AppError('Not an image! Please upload only images', 400), false);
@@ -26,7 +26,7 @@ exports.uploadProductImages = upload.fields([
 
 exports.resizeImages = catchAsync(async (req, res, next) => {
   //Cover
-  req.body.imageCover = `product-${req.body._id}-${Date.now()}-cover.jpeg`;
+  req.body.imageCover = `product-${req.params.productId}-${Date.now()}-cover.jpeg`;
 
   await sharp(req.files.imageCover[0].buffer)
     .resize(2000, 1333)
@@ -39,7 +39,7 @@ exports.resizeImages = catchAsync(async (req, res, next) => {
 
   await Promise.all(
     req.files.images.map(async (file, i) => {
-      const filename = `product-${req.params._id}-${Date.now()}-${i + 1}.jpeg`;
+      const filename = `product-${req.params.productId}-${Date.now()}-${i + 1}.jpeg`;
 
       await sharp(file.buffer)
         .resize(2000, 1333)

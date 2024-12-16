@@ -37,8 +37,8 @@ router
   .patch(
     authController.protect,
     authController.restrictTo('seller', 'admin'),
-    // productController.uploadProductImages,
-    // productController.resizeImages,
+    productController.uploadProductImages,
+    productController.resizeImages,
     productController.updateProduct
   )
   .delete(
