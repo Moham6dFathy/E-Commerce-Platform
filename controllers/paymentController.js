@@ -130,7 +130,6 @@ exports.webhookCheckout = async (req, res) => {
   const signature = req.headers['stripe-signature'];
 
   let event;
-  console.log();
   try {
     event = stripe.webhooks.constructEvent(
       req.body,

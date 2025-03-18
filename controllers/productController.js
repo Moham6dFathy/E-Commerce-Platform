@@ -104,7 +104,6 @@ exports.createProduct = catchAsync(async (req, res, next) => {
 });
 
 exports.updateProduct = catchAsync(async (req, res, next) => {
-  console.log(req.file);
   const updatedProduct = await Product.findByIdAndUpdate(
     req.params.productId,
     req.body,
