@@ -79,8 +79,7 @@ const createOrderCheckout = async (session) => {
     items: cart.items,
     shippingAddress: {
       street: session.customer_details.address.line1,
-      // city: session.customer_details.address.state,
-      city: 'zagazig',
+      city: session.customer_details.address.line1,
       country: session.customer_details.address.city,
     },
     shippingMethod: 'Normal',
@@ -103,10 +102,17 @@ const createOrderCheckout = async (session) => {
 
   // update quantities of products
   await Promise.all(
-    cart.items.map(async (item) => {
-      await Product.findByIdAndUpdate(item.product, {
-        quantity: quantity - item.quantity,
-      });
+    order.items.map(async (item) => {
+      await Product.findByIdAndUpdate(
+        item.product,
+        {
+          quantity: quantity - item.quantity,
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
     })
   );
 
