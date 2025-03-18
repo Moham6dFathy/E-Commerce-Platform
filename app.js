@@ -6,6 +6,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const pathToSwaggerUi = require('swagger-ui-dist').absolutePath();
 
 // Error Handler
 const globalErrorhandler = require('./controllers/errorController');
@@ -37,6 +38,9 @@ app.post(
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
+
+//Setup Swagger
+app.use(express.static(pathToSwaggerUi));
 
 // GLOBAL MIDDLEWARES
 app.use(cors());

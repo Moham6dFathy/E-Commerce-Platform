@@ -79,7 +79,8 @@ const createOrderCheckout = async (session) => {
     items: cart.items,
     shippingAddress: {
       street: session.customer_details.address.line1,
-      city: session.customer_details.address.state,
+      // city: session.customer_details.address.state,
+      city: 'zagazig',
       country: session.customer_details.address.city,
     },
     shippingMethod: 'Normal',
