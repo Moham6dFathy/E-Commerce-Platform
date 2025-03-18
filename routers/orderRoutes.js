@@ -4,7 +4,6 @@ const router = express.Router();
 
 // controllers
 const orderController = require('../controllers/orderController');
-const paymentController = require('../controllers/paymentController');
 const authController = require('../controllers/authController');
 
 router.use(authController.protect);

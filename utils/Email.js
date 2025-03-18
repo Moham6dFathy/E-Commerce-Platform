@@ -55,7 +55,7 @@ class Email {
       `this is the Password Reset Url: ${this.url}`
     );
   }
-  async snedOrderdetails() {
+  async sendOrderdetails() {
     await this.send(
       `The Order ${this.order._id.toString()} is been done `,
       'The order is in processing you will recive message if it is deliverd'

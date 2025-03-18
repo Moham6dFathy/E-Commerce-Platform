@@ -105,9 +105,7 @@ const createOrderCheckout = async (session) => {
     order.items.map(async (item) => {
       await Product.findByIdAndUpdate(
         item.product,
-        {
-          quantity: quantity - item.quantity,
-        },
+        { $inc: { quantity: -item.quantity } },
         {
           new: true,
           runValidators: true,
@@ -123,7 +121,7 @@ const createOrderCheckout = async (session) => {
 
   //Send Email for user
   const user = await User.findById(cart.user);
-  await new Email(user, 0, order).snedOrderdetails();
+  await new Email(user, 0, order).sendOrderdetails();
 };
 
 exports.webhookCheckout = async (req, res) => {
