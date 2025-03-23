@@ -5,6 +5,7 @@ const catchAsync = require('../utils/catchAsync');
 const Cart = require('../models/cartModel');
 const Email = require('../utils/Email');
 const User = require('../models/userModel');
+const AppError = require('../utils/AppError');
 
 const stripe = require('stripe')(process.env.STRIPE_KEY);
 
@@ -92,7 +93,7 @@ const createOrderCheckout = async (session) => {
 
   const payment = {
     order: order._id,
-    transaction_id: session.id,
+    payment_intent: session.payment_intent,
     amount: session.amount_total / 100,
     paymentMethod: 'credit card',
     status: 'success',
@@ -143,3 +144,67 @@ exports.webhookCheckout = async (req, res) => {
 
   res.status(200).json({ received: true });
 };
+
+exports.refundPayment = catchAsync(async (req, res, next) => {
+  const refund = await stripe.refund.create({
+    payment_intent: req.params.pi,
+  });
+
+  if (!refund) {
+    return next(new AppError('Refund process failed!', 400));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Refund process done!',
+    data: refund,
+  });
+});
+
+exports.findAllPayments = async (req, res, next) => {
+  const payments = await Payment.find();
+
+  res.status(200).json({
+    status: 'success',
+    data: payments,
+  });
+};
+
+exports.findPayment = catchAsync(async (req, res, next) => {
+  const payment = await Payment.findById(req.params.id);
+
+  if (!payment) {
+    return next(new AppError('payment not found', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: payment,
+  });
+});
+
+exports.updatePayment = catchAsync(async (req, res, next) => {
+  const payment = await Payment.findByIdAndUpdate(
+    req.params.id,
+    { ...req.body },
+    { runValidators: true, new: true }
+  );
+
+  if (!payment) {
+    return next(new AppError('payment not updated successfully', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: payment,
+  });
+});
+
+exports.deletePayment = catchAsync(async (req, res, next) => {
+  await Payment.findByIdAndDelete(req.params.id);
+
+  res.status(204).json({
+    status: 'success',
+    message: 'payment deleted successfully',
+  });
+});

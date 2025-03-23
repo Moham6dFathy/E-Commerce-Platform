@@ -18,9 +18,9 @@ const paymentSchema = new mongosse.Schema({
     enum: ['pending', 'success', 'failed'],
     default: 'pending',
   },
-  transaction_id: {
+  payment_intent: {
     type: String,
-    required: [true, 'You must attach the transaction_id'],
+    required: [true, 'You must attach the Payment Intent'],
   },
   createdAt: {
     type: Date,
