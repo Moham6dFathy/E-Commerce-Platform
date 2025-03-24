@@ -58,9 +58,10 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     }
   }
 
-  order = await Order.create(orderBody);
-
-  const stripeSession = await paymentController.getCheckoutSession(req, order);
+  const stripeSession = await paymentController.getCheckoutSession(
+    req,
+    orderBody
+  );
 
   res.status(201).json({
     status: 'success',
