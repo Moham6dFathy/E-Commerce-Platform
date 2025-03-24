@@ -18,13 +18,15 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     ...req.body,
   };
 
+  let order = {};
+
   if (req.body.paymentMethod === 'On delivery') {
     Object.assign(orderBody, {
       items: cart.items,
       paymentStatus: 'pending',
     });
 
-    const order = await Order.create(orderBody);
+    order = await Order.create(orderBody);
 
     if (order) {
       // update quantities of products
@@ -55,6 +57,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
       });
     }
   }
+
+  order = await Order.create(orderBody);
 
   const stripeSession = await paymentController.getCheckoutSession(req, order);
 
