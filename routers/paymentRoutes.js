@@ -10,7 +10,7 @@ router.use(authController.protect);
 
 router.use(authController.restrictTo('admin'));
 
-route.patch('/refund/:pi', paymentController.refundPayment);
+router.patch('/refund/:pi', paymentController.refundPayment);
 
 router.route('/').get(paymentController.findAllPayments);
 router
