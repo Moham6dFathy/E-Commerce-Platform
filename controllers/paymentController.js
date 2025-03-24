@@ -146,7 +146,7 @@ exports.webhookCheckout = async (req, res) => {
 };
 
 exports.refundPayment = catchAsync(async (req, res, next) => {
-  const refund = await stripe.refund.create({
+  const refund = await stripe.refunds.create({
     payment_intent: req.params.pi,
   });
 
