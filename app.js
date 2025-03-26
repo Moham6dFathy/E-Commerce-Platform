@@ -7,6 +7,8 @@ const xss = require('xss-clean');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const pathToSwaggerUi = require('swagger-ui-dist').absolutePath();
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
 // Error Handler
 const globalErrorhandler = require('./controllers/errorController');
@@ -26,6 +28,8 @@ const wishlistRouter = require('./routers/wishlistRoutes');
 const paymentController = require('./controllers/paymentController');
 
 const app = express();
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Webhook Checkout
 app.post(

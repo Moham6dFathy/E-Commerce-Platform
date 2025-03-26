@@ -150,6 +150,26 @@ exports.refundPayment = catchAsync(async (req, res, next) => {
     payment_intent: req.params.pi,
   });
 
+
+  const payment = (await Payment.find({ payment_intent: req.params.pi }))[0];
+  const order = await Order.findById(payment.order.toString());
+  order.status = 'canceled';
+
+  await Promise.all(
+    order.items.map(async (item) => {
+      const returnedQuantity = item.quantity;
+      await Product.findByIdAndUpdate(
+        item.product,
+        {
+          $inc: { quantity: +returnedQuantity },
+        },
+        { runValidators: true }
+      );
+    })
+  );
+
+  await order.save();
+
   if (!refund) {
     return next(new AppError('Refund process failed!', 400));
   }

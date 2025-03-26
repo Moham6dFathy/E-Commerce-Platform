@@ -14,7 +14,7 @@ router.patch('/refund/:pi', paymentController.refundPayment);
 
 router.route('/').get(paymentController.findAllPayments);
 router
-  .route('/id')
+  .route('/:id')
   .get(paymentController.findPayment)
   .patch(paymentController.updatePayment)
   .delete(paymentController.deletePayment);
