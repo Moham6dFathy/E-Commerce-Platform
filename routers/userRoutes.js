@@ -10,11 +10,11 @@ router.post('/signup', authController.signUp);
 router.post('/login', authController.login);
 router.post('/forgotpassword', authController.forgotPassword);
 router.patch('/resetpassword/:resetToken', authController.resetPassword);
+router.get('/refreshtoken', authController.refreshToken);
 
 router.use(authController.protect);
 
-router.get('/logout',authController.logout)
-
+router.get('/logout', authController.logout);
 
 router
   .route('/')
@@ -22,11 +22,11 @@ router
   .post(authController.restrictTo('admin'), userController.createNewUser)
   .delete(authController.restrictTo('admin'), userController.deleteAllUsers);
 
-router.get('/me',userController.currentUser)
+router.get('/me', userController.currentUser);
 router.patch('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
 router.patch('/changePassword', authController.changePassword);
-router.get('/verify-email/:token',authController.verifyEmail)
+router.get('/verify-email/:token', authController.verifyEmail);
 
 router
   .route('/:id')

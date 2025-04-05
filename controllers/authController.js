@@ -7,11 +7,12 @@ const Cart = require('../models/cartModel');
 const Email = require('../utils/Email');
 const crypto = require('crypto');
 const Wishlist = require('../models/wishlistModel');
+const { referrerPolicy } = require('helmet');
 
 // return the token
-const signToken = (id) => {
+const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
+    expiresIn: process.env.ACCESSTOKEN_EXPIRES_IN,
   });
 };
 
@@ -22,8 +23,17 @@ const confirmationToken = (email) => {
 };
 
 // Send Token and save it in Cookies
-const createSendToken = (user, statusCode, res) => {
-  const token = signToken(user._id);
+const sendToken = async (user, statusCode, res) => {
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: process.env.REFRESHTOKEN_EXPIRES_IN,
+  });
+
+  await User.findByIdAndUpdate(
+    user._id,
+    { refreshToken: refreshToken },
+    { runValidator: true }
+  );
 
   const cookieOption = {
     expires: new Date(
@@ -33,16 +43,39 @@ const createSendToken = (user, statusCode, res) => {
   };
   if (process.env.NODE_ENV === 'production') cookieOption.secure = true;
 
-  res.cookie('jwt', token, cookieOption);
+  res.cookie('refreshToken', refreshToken, cookieOption);
 
   res.status(statusCode).json({
     status: 'success',
-    token,
+    accessToken,
+    refreshToken,
     data: {
       user,
     },
   });
 };
+
+exports.refreshToken = catchAsync(async (req, res, next) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) res.sendStatus(401);
+
+  jwt.verify(refreshToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
+    if (err) res.sendStatus(403);
+    const accessToken = generateAccessToken(
+      decoded.id,
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: process.env.ACCESSTOKEN_EXPIRES_IN,
+      }
+    );
+
+    return res.status(200).json({
+      accessToken,
+    });
+  });
+  res.sendStatus(403);
+});
 
 const sendEmailConfirmationUrl = async (user) => {
   //Generate a token which has a email of user and attach it in email
@@ -57,23 +90,24 @@ const sendEmailConfirmationUrl = async (user) => {
 
 // Signup
 exports.signUp = catchAsync(async (req, res, next) => {
-  const newCustomer = await User.create(req.body);
+  const user = await User.create(req.body);
   //Create a cart for a new user
   await Cart.create({
-    user: newCustomer._id,
+    user: user._id,
   });
   //Create a wishlist for a new user
   await Wishlist.create({
-    user: newCustomer._id,
+    user: user._id,
   });
 
   //Send Welcome Email
-  await new Email(newCustomer).sendWelcome();
+  await new Email(user).sendWelcome();
 
   //Send Email Verifcation Url
-  sendEmailConfirmationUrl(newCustomer);
-  newCustomer.password = undefined;
-  createSendToken(newCustomer, 200, res);
+  sendEmailConfirmationUrl(user);
+
+  user.password = undefined;
+  sendToken(user, 200, res);
 });
 
 //Login
@@ -101,12 +135,16 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('May be email or passowrd is Wrong!', 401));
   }
   customer.password = undefined;
-  createSendToken(customer, 200, res);
+  sendToken(customer, 200, res);
 });
 
 //Log out
 exports.logout = catchAsync(async (req, res, next) => {
-  res.clearCookie('jwt', { httpOnly: true, secure: true });
+  const user = await User.findById(req.user._id);
+  user.refreshToken = undefined;
+  await user.save();
+
+  res.clearCookie('refreshToken', { httpOnly: true, secure: true });
 
   res.status(200).json({
     status: 'success',
@@ -121,7 +159,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer') &&
-    req.cookies.jwt
+    req.cookies.refreshToken
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
@@ -231,7 +269,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordChangedAt = Date.now();
   await user.save({ validateBeforeSave: false });
 
-  createSendToken(user, 200, res);
+  sendToken(user, 200, res);
 });
 
 exports.changePassword = catchAsync(async (req, res, next) => {
@@ -259,7 +297,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     return next(new AppError(err.message, err.statusCode));
   }
 
-  createSendToken(user, 200, res);
+  sendToken(user, 200, res);
 });
 
 exports.verifyEmail = catchAsync(async (req, res, next) => {
