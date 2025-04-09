@@ -6,9 +6,14 @@ const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const authController = require('../controllers/authController');
 
-router.use(authController.protect);
+//Middlewares
+const protect = require('../middlewares/protect');
+const restrictTo = require('../middlewares/restrictTo')
 
-router.use(authController.restrictTo('admin'));
+
+router.use(protect);
+
+router.use(restrictTo('admin'));
 
 router.patch('/refund/:pi', paymentController.refundPayment);
 

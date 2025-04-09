@@ -6,8 +6,12 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const cartController = require('../controllers/cartController');
 
-router.use(authController.protect);
-router.use(authController.restrictTo('customer'));
+//Middlewares
+const protect = require('../middlewares/protect');
+const restrictTo = require('../middlewares/restrictTo')
+
+router.use(protect);
+router.use(restrictTo('customer'));
 
 router.route('/').get(cartController.getCart).post(cartController.addCartItem);
 

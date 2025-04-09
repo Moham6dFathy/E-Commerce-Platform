@@ -4,6 +4,11 @@ const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 
+//Middlewares
+const protect = require('../middlewares/protect');
+const restrictTo = require('../middlewares/restrictTo')
+
+
 const router = express.Router();
 
 router.post('/signup', authController.signUp);
@@ -12,15 +17,15 @@ router.post('/forgotpassword', authController.forgotPassword);
 router.patch('/resetpassword/:resetToken', authController.resetPassword);
 router.get('/refreshtoken', authController.refreshToken);
 
-router.use(authController.protect);
+router.use(protect);
 
 router.get('/logout', authController.logout);
 
 router
   .route('/')
-  .get(authController.restrictTo('admin'), userController.getAllUsers)
-  .post(authController.restrictTo('admin'), userController.createNewUser)
-  .delete(authController.restrictTo('admin'), userController.deleteAllUsers);
+  .get(restrictTo('admin'), userController.getAllUsers)
+  .post(restrictTo('admin'), userController.createNewUser)
+  .delete(restrictTo('admin'), userController.deleteAllUsers);
 
 router.get('/me', userController.currentUser);
 router.patch('/updateMe', userController.updateMe);

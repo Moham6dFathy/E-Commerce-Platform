@@ -6,8 +6,13 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const reviewController = require('../controllers/reviewController');
 
-router.use(authController.protect);
-router.use(authController.restrictTo('customer'));
+//Middlewares
+const protect = require('../middlewares/protect');
+const restrictTo = require('../middlewares/restrictTo')
+
+
+router.use(protect);
+router.use(restrictTo('customer'));
 
 router
   .route('/')

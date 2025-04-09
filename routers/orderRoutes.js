@@ -6,16 +6,21 @@ const router = express.Router();
 const orderController = require('../controllers/orderController');
 const authController = require('../controllers/authController');
 
-router.use(authController.protect);
+//Middlewares
+const protect = require('../middlewares/protect');
+const restrictTo = require('../middlewares/restrictTo')
+
+
+router.use(protect);
 
 router
   .route('/')
-  .get(authController.restrictTo('admin'), orderController.getAllOrders)
+  .get(restrictTo('admin'), orderController.getAllOrders)
   .post(orderController.createOrder)
-  .delete(authController.restrictTo('admin'), orderController.deleteAllOrders);
+  .delete(restrictTo('admin'), orderController.deleteAllOrders);
 router
   .route('/:orderId')
-  .get(authController.restrictTo('admin'), orderController.getOrder)
+  .get(restrictTo('admin'), orderController.getOrder)
   .patch(orderController.updateOrder)
   .delete(orderController.cancelOrder);
 
