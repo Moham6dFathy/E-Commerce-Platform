@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const redisClient = require('../utils/caching');
 const slugify = require('slugify');
 const Product = require('./productModel');
 
@@ -39,13 +40,15 @@ const categorySchema = new mongoose.Schema({
 //Indexes
 categorySchema.index({ parent: 1 });
 
-categorySchema.pre('save', function (next) {
+categorySchema.pre('save', async function (next) {
   this.slug = slugify(this.name, { lower: true });
+  await redisClient.del('categories');
   next();
 });
 
-categorySchema.pre(/^findOneAnd/, function (next) {
+categorySchema.pre(/^findOneAnd/, async function (next) {
   this.set({ updatedAt: Date.now() });
+  await redisClient.del('categories');
   next();
 });
 
@@ -58,6 +61,9 @@ categorySchema.pre('findOneAndDelete', async function (next) {
       runValidators: true,
     }
   );
+
+  await redisClient.del('categories');
+
   next();
 });
 

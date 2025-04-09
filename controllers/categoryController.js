@@ -1,10 +1,11 @@
 const Category = require('../models/categoryModel');
-const Product = require('../models/productModel');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
-const mongoose = require('mongoose');
 const multer = require('multer');
 const sharp = require('sharp');
+
+const mongoose = require('mongoose');
+const redisClient = require('../utils/caching');
 
 //Image Cover Upload
 const memoryStorage = multer.memoryStorage();
@@ -38,6 +39,17 @@ exports.resizeImages = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllCategories = catchAsync(async (req, res, next) => {
+  const cachedCategories = await redisClient.json.get('categories', '$');
+
+  if (cachedCategories) {
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        categories: cachedCategories,
+      },
+    });
+  }
+
   const categories = await Category.aggregate([
     {
       $lookup: {
@@ -48,6 +60,10 @@ exports.getAllCategories = catchAsync(async (req, res, next) => {
       },
     },
   ]);
+
+  //cache the categories
+  await redisClient.json.set('categories', '$', categories);
+  await redisClient.expire('categories', 3600);
 
   res.status(200).json({
     status: 'success',

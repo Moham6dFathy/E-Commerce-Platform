@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const redisClient = require('../utils/caching');
 
 const productSchema = new mongoose.Schema({
   title: {
@@ -63,12 +64,14 @@ const productSchema = new mongoose.Schema({
   },
 });
 
-productSchema.pre('save', function (next) {
+productSchema.pre('save', async function (next) {
   this.slug = this.title.toLowerCase();
+  await redisClient.del('products');
   next();
 });
-productSchema.pre(/^findOneAnd/, function (next) {
+productSchema.pre(/^findOneAnd/, async function (next) {
   this.set({ updatedAt: Date.now() });
+  await redisClient.del('products');
   next();
 });
 productSchema.pre(/^find/, function (next) {

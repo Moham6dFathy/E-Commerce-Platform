@@ -4,6 +4,7 @@ const Product = require('../models/productModel');
 const multer = require('multer');
 const sharp = require('sharp');
 const APIFeatures = require('../utils/APIFeatures');
+const redisClient = require('../utils/caching');
 
 const memoryStorage = multer.memoryStorage();
 
@@ -25,32 +26,38 @@ exports.uploadProductImages = upload.fields([
   { name: 'images', maxCount: 7 },
 ]);
 
+
 exports.resizeImages = catchAsync(async (req, res, next) => {
-  //Cover
-  req.body.imageCover = `product-${req.params.productId}-${Date.now()}-cover.jpeg`;
+  // Check if files were uploaded
+  if (!req.files || (!req.files.imageCover && !req.files.images)) {
+    return next(); // Skip if no files are present
+  }
 
-  await sharp(req.files.imageCover[0].buffer)
-    .resize(2000, 1333)
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(`uploads/Products/${req.body.imageCover}`);
+  // Process imageCover if present
+  if (req.files.imageCover) {
+    req.body.imageCover = `product-${req.params.productId}-${Date.now()}-cover.jpeg`;
+    await sharp(req.files.imageCover[0].buffer)
+      .resize(2000, 1333)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`uploads/Products/${req.body.imageCover}`);
+  }
 
-  // Images
-  req.body.images = [];
-
-  await Promise.all(
-    req.files.images.map(async (file, i) => {
-      const filename = `product-${req.params.productId}-${Date.now()}-${i + 1}.jpeg`;
-
-      await sharp(file.buffer)
-        .resize(2000, 1333)
-        .toFormat('jpeg')
-        .jpeg({ quality: 90 })
-        .toFile(`uploads/Products/${filename}`);
-
-      req.body.images.push(filename);
-    })
-  );
+  // Process images if present
+  if (req.files.images) {
+    req.body.images = [];
+    await Promise.all(
+      req.files.images.map(async (file, i) => {
+        const filename = `product-${req.params.productId}-${Date.now()}-${i + 1}.jpeg`;
+        await sharp(file.buffer)
+          .resize(2000, 1333)
+          .toFormat('jpeg')
+          .jpeg({ quality: 90 })
+          .toFile(`uploads/Products/${filename}`);
+        req.body.images.push(filename);
+      })
+    );
+  }
 
   next();
 });
@@ -70,6 +77,9 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   //get the products
   const products = await features.query;
 
+  await redisClient.json.set('products', '$', products);
+  await redisClient.expire('products', 1300);
+
   res.status(200).json({
     status: 'success',
     data: {
@@ -79,7 +89,12 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 });
 
 exports.getProduct = catchAsync(async (req, res, next) => {
-  const product = await Product.findById(req.params.productId);
+  const products = await redisClient.json.get('products', '$');
+
+  let product;
+  if (!products) {
+    product = await Product.findById(req.params.productId);
+  } else product = products.filter((p) => p._id == req.params.productId);
 
   if (!product) return next(new AppError('Not found a product!', 400));
 
