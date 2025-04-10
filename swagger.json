@@ -19,21 +19,345 @@
       "description": "Development server"
     }
   ],
+  "tags": [
+    { "name": "Authentication", "description": "User authentication endpoints" },
+    { "name": "Users", "description": "User management endpoints" },
+    { "name": "Products", "description": "Product management endpoints" },
+    { "name": "Categories", "description": "Category management endpoints" },
+    { "name": "Orders", "description": "Order management endpoints" },
+    { "name": "Payments", "description": "Payment processing endpoints" },
+    { "name": "Cart", "description": "Shopping cart endpoints" },
+    { "name": "Reviews", "description": "Product review endpoints" },
+    { "name": "Wishlist", "description": "Wishlist management endpoints" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "username": { "type": "string" },
+          "password": { "type": "string", "format": "password" },
+          "confirmPassword": { "type": "string", "format": "password" },
+          "address": { "type": "string" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "quantity": { "type": "number" },
+          "price": { "type": "number" },
+          "category": { "type": "string" },
+          "currency": { "type": "string" },
+          "brand": { "type": "string" },
+          "amount": { "type": "number" },
+          "imageCover": { "type": "string", "format": "binary" },
+          "images": { "type": "array", "items": { "type": "string", "format": "binary" } }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "parent": { "type": "string" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "shippingAddress": {
+            "type": "object",
+            "properties": {
+              "street": { "type": "string" },
+              "city": { "type": "string" },
+              "country": { "type": "string" }
+            }
+          },
+          "shippingMethod": { "type": "string" },
+          "shippingCost": { "type": "number" },
+          "paymentMethod": { "type": "string" }
+        }
+      },
+      "CartItem": {
+        "type": "object",
+        "properties": {
+          "product": { "type": "string" },
+          "quantity": { "type": "number" }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "product": { "type": "string" },
+          "review": { "type": "string" },
+          "rating": { "type": "number" }
+        }
+      },
+      "WishlistItem": {
+        "type": "object",
+        "properties": {
+          "product": { "type": "string" }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" }
+        }
+      }
+    }
+  },
   "paths": {
-    "/products": {
-      "get": {
-        "summary": "Get all products",
-        "tags": ["Products"],
+    "/users/signup": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign up a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/User" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "List of all products",
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/logout": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "User logout",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Logout successful" } }
+      }
+    },
+    "/users/forgotpassword": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Forgot password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Password reset email sent" } }
+      }
+    },
+    "/users/resetpassword/{token}": {
+      "patch": {
+        "tags": ["Authentication"],
+        "summary": "Reset password",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": { "type": "string", "format": "password" },
+                  "confirmPassoword": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/changePassword": {
+      "patch": {
+        "tags": ["Authentication"],
+        "summary": "Change password",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "passwordCurrent": { "type": "string", "format": "password" },
+                  "password": { "type": "string", "format": "password" },
+                  "confirmPassword": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/verify-email/{token}": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Verify email",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Email verified" } }
+      }
+    },
+    "/users/refreshtoken": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Refresh token",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "New access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of users",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Product"
-                  }
+                  "items": { "$ref": "#/components/schemas/User" }
                 }
               }
             }
@@ -41,144 +365,779 @@
         }
       },
       "post": {
-        "summary": "Create a new product",
-        "tags": ["Products"],
+        "tags": ["Users"],
+        "summary": "Create a new user",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Product"
-              }
+              "schema": { "$ref": "#/components/schemas/User" }
             }
           }
         },
+        "responses": { "201": { "description": "User created" } }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete all users",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "All users deleted" } }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get a user",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
         "responses": {
-          "201": {
-            "description": "Product created successfully"
+          "200": {
+            "description": "User data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
           }
         }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update a user",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/User" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User updated" } }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete a user",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "User deleted" } }
+      }
+    },
+    "/users/updateMe": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update current user info",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/User" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User info updated" } }
+      }
+    },
+    "/users/deleteMe": {
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "Current user deleted" } }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get all products",
+        "responses": {
+          "200": {
+            "description": "List of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Product" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Create a product",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Product" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Product created" } }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete all products",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "All products deleted" } }
       }
     },
     "/products/{id}": {
       "get": {
-        "summary": "Get a product by ID",
         "tags": ["Products"],
+        "summary": "Get a product",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "ID of the product",
-            "schema": {
-              "type": "string"
-            }
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
           "200": {
-            "description": "Product details",
+            "description": "Product data",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Product"
-                }
+                "schema": { "$ref": "#/components/schemas/Product" }
               }
             }
-          },
-          "404": {
-            "description": "Product not found"
           }
         }
       },
-      "put": {
-        "summary": "Update a product by ID",
+      "patch": {
         "tags": ["Products"],
+        "summary": "Update a product",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "ID of the product",
-            "schema": {
-              "type": "string"
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/Product" }
             }
+          }
+        },
+        "responses": { "200": { "description": "Product updated" } }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete a product",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Product deleted" } }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get all categories",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Category" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Create a category",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Category" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Category created" } }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Delete all categories",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "All categories deleted" } }
+      }
+    },
+    "/categories/{id}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get a category",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Categories"],
+        "summary": "Update a category",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Category" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Category updated" } }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Delete a category",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Category deleted" } }
+      }
+    },
+    "/categories/{id}/products": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get products of a category",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Product" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Create a product in a category",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Product"
-              }
+              "schema": { "$ref": "#/components/schemas/Product" }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Product updated successfully"
-          },
-          "404": {
-            "description": "Product not found"
-          }
-        }
+        "responses": { "201": { "description": "Product created" } }
       },
       "delete": {
-        "summary": "Delete a product by ID",
-        "tags": ["Products"],
+        "tags": ["Categories"],
+        "summary": "Delete all products of a category",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "ID of the product",
-            "schema": {
-              "type": "string"
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "All products deleted" } }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create an order",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Order" }
             }
+          }
+        },
+        "responses": { "201": { "description": "Order created" } }
+      },
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get all orders",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Order" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Orders"],
+        "summary": "Delete all orders",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "All orders deleted" } }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get an order",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Product deleted successfully"
-          },
-          "404": {
-            "description": "Product not found"
+          "200": {
+            "description": "Order data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Orders"],
+        "summary": "Delete an order",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Order deleted" } }
+      }
+    },
+    "/payments": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Get all payments",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Payment" }
+                }
+              }
+            }
           }
         }
       }
-    }
-  },
-  "components": {
-    "schemas": {
-      "Product": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "12345"
-          },
-          "name": {
-            "type": "string",
-            "example": "Product Name"
-          },
-          "price": {
-            "type": "number",
-            "example": 99.99
-          },
-          "description": {
-            "type": "string",
-            "example": "Product description here"
-          },
-          "category": {
-            "type": "string",
-            "example": "Electronics"
-          },
-          "stock": {
-            "type": "integer",
-            "example": 100
+    },
+    "/payments/{id}": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Get a payment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Payment" }
+              }
+            }
           }
         }
+      },
+      "patch": {
+        "tags": ["Payments"],
+        "summary": "Update a payment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Payment" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Payment updated" } }
+      },
+      "delete": {
+        "tags": ["Payments"],
+        "summary": "Delete a payment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Payment deleted" } }
+      }
+    },
+    "/payments/checkout-session/{id}": {
+      "get": {
+        "tags": ["Payments"],
+        "summary": "Checkout the cart",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Checkout session created" } }
+      }
+    },
+    "/payments/refund/{paymentId}": {
+      "patch": {
+        "tags": ["Payments"],
+        "summary": "Refund a payment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Payment refunded" } }
+      }
+    },
+    "/cart": {
+      "post": {
+        "tags": ["Cart"],
+        "summary": "Add item to cart",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartItem" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Item added to cart" } }
+      },
+      "get": {
+        "tags": ["Cart"],
+        "summary": "Get cart",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Cart data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/CartItem" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/{id}": {
+      "patch": {
+        "tags": ["Cart"],
+        "summary": "Update cart item",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartItem" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Cart item updated" } }
+      },
+      "delete": {
+        "tags": ["Cart"],
+        "summary": "Delete cart item",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Cart item deleted" } }
+      }
+    },
+    "/reviews": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "Create a review",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Review" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Review created" } }
+      },
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get all reviews",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Review" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get a review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Review" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Reviews"],
+        "summary": "Update a review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Review" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Review updated" } }
+      },
+      "delete": {
+        "tags": ["Reviews"],
+        "summary": "Delete a review",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Review deleted" } }
+      }
+    },
+    "/wishlist": {
+      "post": {
+        "tags": ["Wishlist"],
+        "summary": "Add item to wishlist",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WishlistItem" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Item added to wishlist" } }
+      },
+      "get": {
+        "tags": ["Wishlist"],
+        "summary": "Get wishlist",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Wishlist data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WishlistItem" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Wishlist"],
+        "summary": "Clear all items in wishlist",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "Wishlist cleared" } }
+      }
+    },
+    "/wishlist/{id}": {
+      "delete": {
+        "tags": ["Wishlist"],
+        "summary": "Remove item from wishlist",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Item removed from wishlist" } }
       }
     }
   }

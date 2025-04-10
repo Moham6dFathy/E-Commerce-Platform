@@ -26,15 +26,16 @@ const upload = multer({
 exports.uploadProductImages = upload.fields([{ name: 'image', maxCount: 1 }]);
 
 exports.resizeImages = catchAsync(async (req, res, next) => {
-  //Image of Category
-  req.body.image = `Category-${req.params.categoryId}-${Date.now()}-Image.jpeg`;
+  if (req.files && req.files.length > 0) {
+    //Image of Category
+    req.body.image = `Category-${req.params.categoryId}-${Date.now()}-Image.jpeg`;
 
-  await sharp(req.files.image[0].buffer)
-    .resize(2000, 1333)
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(`uploads/Categories/${req.body.image}`);
-
+    await sharp(req.files.image[0].buffer)
+      .resize(2000, 1333)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`uploads/Categories/${req.body.image}`);
+  }
   next();
 });
 

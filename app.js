@@ -23,11 +23,18 @@ const orderRouter = require('./routers/orderRoutes');
 const reviewRouter = require('./routers/reviewRoutes');
 const paymentRouter = require('./routers/paymentRoutes');
 const wishlistRouter = require('./routers/wishlistRoutes');
+const fs = require('fs');
+const path = require('path');
 
 // Controller
 const paymentController = require('./controllers/paymentController');
 
 const app = express();
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, 'access.log'),
+  { flags: 'a' } // 'a' means append mode
+);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -53,7 +60,36 @@ app.options('*', cors());
 
 // Morgan
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+  // Middleware to capture response body
+  app.use((req, res, next) => {
+    const originalEnd = res.end;
+    let responseBody = '';
+
+    res.end = function (chunk) {
+      if (chunk) {
+        responseBody += chunk.toString();
+      }
+      originalEnd.apply(res, arguments);
+    };
+
+    // Add response body to res.locals for Morgan to access
+    res.on('finish', () => {
+      res.locals.responseBody = responseBody;
+    });
+
+    next();
+  });
+
+  // Custom Morgan token for response body
+  morgan.token('response-body', (req, res) => res.locals.responseBody || '');
+
+  // Use Morgan with custom format
+  app.use(
+    morgan(
+      ':method :url :status :res[content-length] - :response-time ms :response-body',
+      { stream: accessLogStream }
+    )
+  );
 }
 
 const limiter = rateLimit({
