@@ -34,7 +34,7 @@ Follow these steps to get the project up and running on your local machine:
 ```bash
 # Clone the repository
 git clone https://github.com/Moham6dFathy/E-Commerce-Platform.git
-cd e-commerce
+cd E-Commerce-Platform
 
 # Install dependencies
 npm install
